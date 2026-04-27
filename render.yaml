@@ -2,8 +2,9 @@ services:
   - type: web
     name: my-rag-app
     runtime: python
-    buildCommand: pip install -r requirements.txt
+    # Pin Python: 3.14 defaults break fastembed (py-rust-stemmers has no cp314 wheels → Rust build on RO FS).
+    buildCommand: python --version && pip install -r requirements.txt
     startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
     envVars:
       - key: PYTHON_VERSION
-        value: "3.11"
+        value: "3.11.11"
