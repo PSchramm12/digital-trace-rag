@@ -2,7 +2,7 @@ services:
   - type: web
     name: my-rag-app
     runtime: python
-    buildCommand: pip install streamlit langchain langchain-community langchain-text-splitters chromadb onnxruntime tokenizers && pip install --no-deps sentence-transformers
+    buildCommand: pip install -r requirements.txt
     startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0
     envVars:
       - key: PYTHON_VERSION

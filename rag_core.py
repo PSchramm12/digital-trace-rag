@@ -1,6 +1,7 @@
 import streamlit as st
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 import chromadb
+from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
 from dataclasses import dataclass, field
 
 DOCUMENTS = [
@@ -316,6 +317,11 @@ def _get_client():
 
 
 @st.cache_resource
+def _get_embedding_fn():
+    return ONNXMiniLM_L6_V2()
+
+
+@st.cache_resource
 def build_vectorstore(chunk_size: int, chunk_overlap: int):
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
@@ -333,8 +339,11 @@ def build_vectorstore(chunk_size: int, chunk_overlap: int):
             ids.append(f"{doc['title']}_{chunk_size}_{j}")
 
     client = _get_client()
+    ef = _get_embedding_fn()
     collection_name = f"digitaltrace_{chunk_size}"
-    collection = client.get_or_create_collection(name=collection_name)
+    collection = client.get_or_create_collection(
+        name=collection_name, embedding_function=ef
+    )
     if collection.count() == 0:
         collection.add(documents=texts, metadatas=metadatas, ids=ids)
 
