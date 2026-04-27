@@ -1,6 +1,6 @@
 import streamlit as st
 from style import inject_custom_css
-from rag_core import get_stores
+from rag_core import get_store
 
 st.set_page_config(
     page_title="Fingerprint Demo — DigitalTrace",
@@ -514,8 +514,7 @@ DEMO_TOPICS = [
     ("🛡️", "Countermeasures", "What countermeasures exist against digital fingerprinting?"),
 ]
 
-stores = get_stores()
-primary_store = stores["medium"]["store"]
+primary_store = get_store("medium")["store"]
 
 cols = st.columns(5)
 for i, (icon, label, query) in enumerate(DEMO_TOPICS):

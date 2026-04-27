@@ -288,7 +288,7 @@ CHUNK_CONFIGS = {
 
 @st.cache_resource
 def load_embeddings():
-    return HuggingFaceEmbeddings(model_name="all-MiniLM-L12-v2")
+    return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
 
 
 @st.cache_resource
@@ -314,6 +314,13 @@ def build_vectorstore(_embeddings, chunk_size: int, chunk_overlap: int):
         collection_name=collection_name,
     )
     return vectorstore, len(texts)
+
+
+def get_store(key="medium"):
+    embeddings = load_embeddings()
+    cfg = CHUNK_CONFIGS[key]
+    store, count = build_vectorstore(embeddings, cfg["chunk_size"], cfg["chunk_overlap"])
+    return {"store": store, "chunk_count": count}
 
 
 def get_stores():

@@ -69,7 +69,7 @@ st.markdown("""
 | Component | Technology |
 |-----------|-----------|
 | Frontend | Streamlit |
-| Embeddings | all-MiniLM-L12-v2 (sentence-transformers) |
+| Embeddings | all-MiniLM-L6-v2 (sentence-transformers) |
 | Vector Store | ChromaDB |
 | Text Processing | LangChain |
 | Runtime | Python 3.11 |

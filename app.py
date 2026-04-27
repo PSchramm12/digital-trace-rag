@@ -1,5 +1,5 @@
 import streamlit as st
-from rag_core import get_stores, DOCUMENTS
+from rag_core import get_store, DOCUMENTS
 from style import inject_custom_css
 
 st.set_page_config(
@@ -21,8 +21,7 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-stores = get_stores()
-primary_store = stores["medium"]["store"]
+primary_store = get_store("medium")["store"]
 
 query = st.text_input(
     "🔎 Search the Knowledge Base",

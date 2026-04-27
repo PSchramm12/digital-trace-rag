@@ -59,9 +59,9 @@ st.markdown("### Embedding Model")
 
 st.markdown("""
 <div class="stat-card" style="text-align:left;">
-    <h4>🤖 all-MiniLM-L12-v2</h4>
+    <h4>🤖 all-MiniLM-L6-v2</h4>
     <table style="width:100%; border-collapse:collapse;">
-        <tr><td style="padding:0.3rem 0; color:#64748b;">Size</td><td style="padding:0.3rem 0;">~120 MB</td></tr>
+        <tr><td style="padding:0.3rem 0; color:#64748b;">Size</td><td style="padding:0.3rem 0;">~80 MB</td></tr>
         <tr><td style="padding:0.3rem 0; color:#64748b;">Dimensions</td><td style="padding:0.3rem 0;">384</td></tr>
         <tr><td style="padding:0.3rem 0; color:#64748b;">Language</td><td style="padding:0.3rem 0;">English</td></tr>
         <tr><td style="padding:0.3rem 0; color:#64748b;">Source</td><td style="padding:0.3rem 0;">sentence-transformers (Hugging Face)</td></tr>
