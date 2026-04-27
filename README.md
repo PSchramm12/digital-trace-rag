@@ -12,7 +12,6 @@ Type a natural-language question and the app retrieves the most relevant passage
 
 - **Semantic Search** — find answers by meaning, not keywords
 - **15 Expert-Written Documents** — covering browser, device, canvas, audio, and extension fingerprinting, plus countermeasures, legal aspects, and the information paradox
-- **Chunking Comparison** — side-by-side comparison of small (200), medium (350), and large (500) chunk strategies
 - **Live Fingerprint Demo** — see your own browser fingerprint collected in real time
 - **Corpus Statistics** — explore document structure and embedding model details
 - **Custom UI** — polished design with Inter font, gradient hero sections, and interactive topic cards
@@ -37,9 +36,8 @@ requirements.txt        # Python dependencies
 render.yaml             # Render deployment config
 pages/
   1_About.py            # About page with topic coverage
-  2_Statistics.py       # Corpus statistics and document index
-  3_Comparison.py       # Chunking strategy comparison
-  4_Fingerprint_Demo.py # Live browser fingerprint demo
+  2_Statistics.py       # Corpus statistics, chunking configs, document index
+  3_Fingerprint_Demo.py # Live browser fingerprint demo
 ```
 
 ## Run Locally

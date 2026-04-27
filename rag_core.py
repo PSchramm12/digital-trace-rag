@@ -347,13 +347,6 @@ def get_store(key="medium"):
     return {"store": store, "chunk_count": count}
 
 
-def get_stores():
-    results = {}
-    for key, cfg in CHUNK_CONFIGS.items():
-        store, count = build_vectorstore(cfg["chunk_size"], cfg["chunk_overlap"])
-        results[key] = {"store": store, "chunk_count": count}
-    return results
-
 
 def display_results(results):
     for i, (doc, score) in enumerate(results):

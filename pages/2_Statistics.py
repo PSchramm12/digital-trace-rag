@@ -1,5 +1,6 @@
 import streamlit as st
-from rag_core import DOCUMENTS, CHUNK_CONFIGS, get_stores
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from rag_core import DOCUMENTS, CHUNK_CONFIGS
 from style import inject_custom_css
 
 st.set_page_config(page_title="Statistics — DigitalTrace", page_icon="📊", layout="centered")
@@ -12,11 +13,9 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-stores = get_stores()
 total_words = sum(len(doc["text"].split()) for doc in DOCUMENTS)
 total_chars = sum(len(doc["text"]) for doc in DOCUMENTS)
 
-# --- Key Metrics ---
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.metric("📄 Documents", len(DOCUMENTS))
@@ -29,41 +28,35 @@ with col4:
 
 st.markdown("---")
 
-# --- Chunking Configurations ---
-st.markdown("### Chunking Configurations")
+st.markdown("### Chunking Configuration")
+st.markdown("""
+The app uses a **medium chunking strategy** (chunk size = 350, overlap = 75) 
+which balances precision and context. The table below shows how all three 
+evaluated strategies compare.
+""")
 
-CHUNK_DISPLAY = [
-    ("small", "🔹 Small Chunks", "#6366f1"),
-    ("medium", "🔸 Medium Chunks", "#f59e0b"),
-    ("large", "🔶 Large Chunks", "#ef4444"),
-]
-
-chunk_cols = st.columns(3)
-for col, (key, label, color) in zip(chunk_cols, CHUNK_DISPLAY):
-    with col:
-        cfg = CHUNK_CONFIGS[key]
-        st.markdown(f"""
-        <div class="stat-card">
-            <h4>{label}</h4>
-            <p style="font-size:2rem; font-weight:700; color:{color} !important; margin:0.5rem 0;">
-                {stores[key]['chunk_count']}
-            </p>
-            <p>chunks at size={cfg['chunk_size']}, overlap={cfg['chunk_overlap']}</p>
-        </div>
-        """, unsafe_allow_html=True)
+for key, label, color in [("small", "🔹 Small", "#6366f1"), ("medium", "🔸 Medium (active)", "#f59e0b"), ("large", "🔶 Large", "#ef4444")]:
+    cfg = CHUNK_CONFIGS[key]
+    splitter = RecursiveCharacterTextSplitter(chunk_size=cfg["chunk_size"], chunk_overlap=cfg["chunk_overlap"])
+    chunk_count = sum(len(splitter.split_text(doc["text"])) for doc in DOCUMENTS)
+    st.markdown(f"""
+    <div class="stat-card" style="margin-bottom:0.75rem;">
+        <h4>{label}</h4>
+        <p style="font-size:2rem; font-weight:700; color:{color} !important; margin:0.5rem 0;">{chunk_count}</p>
+        <p>chunks at size={cfg['chunk_size']}, overlap={cfg['chunk_overlap']}</p>
+    </div>
+    """, unsafe_allow_html=True)
 
 st.markdown("---")
 
-# --- Embedding Model ---
 st.markdown("### Embedding Model")
-
 st.markdown("""
 <div class="stat-card" style="text-align:left;">
     <h4>🤖 all-MiniLM-L6-v2</h4>
     <table style="width:100%; border-collapse:collapse;">
-        <tr><td style="padding:0.3rem 0; color:#64748b;">Size</td><td style="padding:0.3rem 0;">~80 MB</td></tr>
         <tr><td style="padding:0.3rem 0; color:#64748b;">Dimensions</td><td style="padding:0.3rem 0;">384</td></tr>
         <tr><td style="padding:0.3rem 0; color:#64748b;">Language</td><td style="padding:0.3rem 0;">English</td></tr>
+        <tr><td style="padding:0.3rem 0; color:#64748b;">Runtime</td><td style="padding:0.3rem 0;">ONNX (via ChromaDB default)</td></tr>
         <tr><td style="padding:0.3rem 0; color:#64748b;">Source</td><td style="padding:0.3rem 0;">sentence-transformers (Hugging Face)</td></tr>
     </table>
 </div>
@@ -71,7 +64,6 @@ st.markdown("""
 
 st.markdown("---")
 
-# --- Document Index ---
 st.markdown("### Document Index")
 
 for i, doc in enumerate(DOCUMENTS, 1):
