@@ -50,12 +50,12 @@ st.markdown("---")
 st.markdown("### Embedding Model")
 st.markdown("""
 <div class="stat-card" style="text-align:left;">
-    <h4>🤖 Lightweight TF-IDF Retrieval</h4>
+    <h4>🤖 Semantic retrieval (MiniLM ONNX)</h4>
     <table style="width:100%; border-collapse:collapse;">
-        <tr><td style="padding:0.3rem 0; color:#64748b;">Vector Type</td><td style="padding:0.3rem 0;">Sparse TF-IDF</td></tr>
-        <tr><td style="padding:0.3rem 0; color:#64748b;">Language</td><td style="padding:0.3rem 0;">English</td></tr>
-        <tr><td style="padding:0.3rem 0; color:#64748b;">Runtime</td><td style="padding:0.3rem 0;">Pure Python (memory-optimized)</td></tr>
-        <tr><td style="padding:0.3rem 0; color:#64748b;">Goal</td><td style="padding:0.3rem 0;">Fast startup and low RAM on Render Free tier</td></tr>
+        <tr><td style="padding:0.3rem 0; color:#64748b;">Model</td><td style="padding:0.3rem 0;">all-MiniLM-L6-v2 (384-d, ONNX via Chroma helper)</td></tr>
+        <tr><td style="padding:0.3rem 0; color:#64748b;">Distance</td><td style="padding:0.3rem 0;">Cosine distance 1 − similarity on L2-normalized vectors</td></tr>
+        <tr><td style="padding:0.3rem 0; color:#64748b;">Store</td><td style="padding:0.3rem 0;">In-memory NumPy matrix (no Chroma client / DuckDB)</td></tr>
+        <tr><td style="padding:0.3rem 0; color:#64748b;">Goal</td><td style="padding:0.3rem 0;">Meaning-based matches (incl. typos) with modest RAM on free tier</td></tr>
     </table>
 </div>
 """, unsafe_allow_html=True)

@@ -1,9 +1,8 @@
-import math
-import re
-from collections import Counter
-from dataclasses import dataclass, field
-
 import streamlit as st
+import numpy as np
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from chromadb.utils.embedding_functions.onnx_mini_lm_l6_v2 import ONNXMiniLM_L6_V2
+from dataclasses import dataclass, field
 
 DOCUMENTS = [
     {
@@ -294,91 +293,52 @@ class Document:
     metadata: dict = field(default_factory=dict)
 
 
-def _split_text(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
-    if chunk_size <= 0:
-        return [text]
-    step = max(1, chunk_size - chunk_overlap)
-    chunks = []
-    start = 0
-    while start < len(text):
-        chunk = text[start : start + chunk_size].strip()
-        if chunk:
-            chunks.append(chunk)
-        start += step
-    return chunks
+class NumpyVectorStore:
+    """Cosine-space retrieval: distance = 1 − cosine similarity (normalized MiniLM vectors)."""
 
-
-def _tokenize(text: str) -> list[str]:
-    return re.findall(r"[a-zA-Z0-9]+", text.lower())
-
-
-class LightweightVectorStore:
-    """Sparse TF-IDF cosine retrieval with low RAM footprint."""
-
-    def __init__(self, texts: list[str], metadatas: list[dict], tfidf_vectors: list[dict], norms: list[float], idf: dict):
+    def __init__(self, matrix: np.ndarray, texts: list[str], metadatas: list[dict]):
+        self._matrix = matrix
         self._texts = texts
         self._metadatas = metadatas
-        self._tfidf_vectors = tfidf_vectors
-        self._norms = norms
-        self._idf = idf
 
     def similarity_search_with_score(self, query: str, k: int = 3):
-        query_tokens = _tokenize(query)
-        if not query_tokens:
-            return []
-        q_counts = Counter(query_tokens)
-        q_vec = {t: c * self._idf.get(t, 0.0) for t, c in q_counts.items()}
-        q_norm = math.sqrt(sum(v * v for v in q_vec.values()))
-        if q_norm == 0:
-            return []
-
-        scored = []
-        for i, d_vec in enumerate(self._tfidf_vectors):
-            dot = sum(q_vec[t] * d_vec.get(t, 0.0) for t in q_vec.keys())
-            denom = q_norm * self._norms[i]
-            sim = (dot / denom) if denom > 0 else 0.0
-            dist = 1.0 - sim  # keep app compatibility: lower is better
-            scored.append((dist, i))
-
-        scored.sort(key=lambda x: x[0])
-        top = scored[: max(1, min(k, len(scored)))]
+        ef = _get_embedding_fn()
+        q = np.asarray(ef([query])[0], dtype=np.float32)
+        sims = self._matrix @ q
+        dists = 1.0 - sims
+        k = min(k, len(dists))
+        top_idx = np.argsort(dists)[:k]
         return [
             (
-                Document(page_content=self._texts[idx], metadata=self._metadatas[idx]),
-                float(dist),
+                Document(page_content=self._texts[i], metadata=self._metadatas[i]),
+                float(dists[i]),
             )
-            for dist, idx in top
+            for i in top_idx
         ]
 
 
 @st.cache_resource
+def _get_embedding_fn():
+    return ONNXMiniLM_L6_V2()
+
+
+@st.cache_resource
 def build_vectorstore(chunk_size: int, chunk_overlap: int):
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+    )
     texts = []
     metadatas = []
     for doc in DOCUMENTS:
-        chunks = _split_text(doc["text"], chunk_size, chunk_overlap)
-        for chunk in chunks:
+        for chunk in splitter.split_text(doc["text"]):
             texts.append(chunk)
             metadatas.append({"source": doc["title"]})
 
-    tokenized = [_tokenize(t) for t in texts]
-    df = Counter()
-    for toks in tokenized:
-        for term in set(toks):
-            df[term] += 1
-    n_docs = max(1, len(texts))
-    idf = {term: math.log((1 + n_docs) / (1 + freq)) + 1.0 for term, freq in df.items()}
-
-    tfidf_vectors = []
-    norms = []
-    for toks in tokenized:
-        tf = Counter(toks)
-        vec = {t: c * idf.get(t, 0.0) for t, c in tf.items()}
-        norm = math.sqrt(sum(v * v for v in vec.values())) or 1.0
-        tfidf_vectors.append(vec)
-        norms.append(norm)
-
-    return LightweightVectorStore(texts, metadatas, tfidf_vectors, norms, idf), len(texts)
+    ef = _get_embedding_fn()
+    raw = ef(texts)
+    matrix = np.stack([np.asarray(e, dtype=np.float32) for e in raw], axis=0)
+    return NumpyVectorStore(matrix, texts, metadatas), len(texts)
 
 
 def get_store(key="medium"):
@@ -389,11 +349,11 @@ def get_store(key="medium"):
 
 def get_chunk_count(key: str) -> int:
     cfg = CHUNK_CONFIGS[key]
-    return sum(
-        len(_split_text(doc["text"], cfg["chunk_size"], cfg["chunk_overlap"]))
-        for doc in DOCUMENTS
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=cfg["chunk_size"],
+        chunk_overlap=cfg["chunk_overlap"],
     )
-
+    return sum(len(splitter.split_text(doc["text"])) for doc in DOCUMENTS)
 
 
 def display_results(results):

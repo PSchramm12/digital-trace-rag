@@ -24,10 +24,10 @@ about how online tracking works.
 
 ### How does it work?
 
-Type a natural-language question on the main page. The app uses a
-**memory-optimized retrieval engine** to find relevant passages from the curated
-document corpus. Results are ranked by content relevance while keeping startup
-time and RAM usage low on free hosting tiers.
+Type a natural-language question on the main page. The app uses **dense
+sentence embeddings** (all-MiniLM-L6-v2 via ONNX) for **semantic** retrieval:
+similar meaning matches even when wording or spelling differs. Vectors are kept
+in NumPy to avoid a full vector database and reduce RAM on free hosting tiers.
 
 ---
 
@@ -69,8 +69,8 @@ st.markdown("""
 | Component | Technology |
 |-----------|-----------|
 | Frontend | Streamlit |
-| Retrieval | Lightweight TF-IDF (pure Python) |
-| Text Processing | Custom chunking + tokenization |
+| Retrieval | MiniLM-L6-v2 embeddings (ONNX) + NumPy cosine retrieval |
+| Text Processing | LangChain `RecursiveCharacterTextSplitter` |
 | Runtime | Python 3.11 |
 
 ---

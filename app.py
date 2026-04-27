@@ -1,5 +1,3 @@
-import re
-
 import streamlit as st
 from rag_core import get_store
 from style import inject_custom_css
@@ -28,37 +26,17 @@ query = st.text_input(
     placeholder="e.g. How does canvas fingerprinting work?",
 )
 
-RELEVANCE_THRESHOLD = 0.9
-DOMAIN_HINTS = (
-    "fingerprint",
-    "tracking",
-    "browser",
-    "device",
-    "canvas",
-    "audio",
-    "webgl",
-    "extension",
-    "entropy",
-    "hash",
-    "privacy",
-    "gdpr",
-    "countermeasure",
-    "ad-tech",
-    "paywall",
-)
+# Cosine distance = 1 − similarity (lower is better). Tuned so typos still match
+# (~0.7) while clearly off-topic queries stay above ~0.85–0.95.
+RELEVANCE_THRESHOLD = 0.84
 
 if query.strip():
     primary_store = get_store("medium")["store"]
-    normalized_query = query.lower()
-    has_domain_hint = any(
-        re.search(rf"\b{re.escape(hint)}\w*\b", normalized_query)
-        for hint in DOMAIN_HINTS
-    )
 
     results = primary_store.similarity_search_with_score(query, k=3)
     if results:
         best_score = results[0][1]
-        is_off_topic = (not has_domain_hint) or (best_score > RELEVANCE_THRESHOLD)
+        is_off_topic = best_score > RELEVANCE_THRESHOLD
         if is_off_topic:
             st.warning(
                 "No relevant match found for this query. "
