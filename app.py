@@ -28,7 +28,7 @@ query = st.text_input(
     placeholder="e.g. How does canvas fingerprinting work?",
 )
 
-RELEVANCE_THRESHOLD = 1.3
+RELEVANCE_THRESHOLD = 0.9
 DOMAIN_HINTS = (
     "fingerprint",
     "tracking",

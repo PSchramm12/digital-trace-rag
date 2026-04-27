@@ -24,10 +24,10 @@ about how online tracking works.
 
 ### How does it work?
 
-Type a natural-language question on the main page. The app uses **semantic
-search** (powered by sentence-transformers and ChromaDB) to find the most
-relevant passage from the curated document corpus. Results are ranked by meaning,
-not keywords.
+Type a natural-language question on the main page. The app uses a
+**memory-optimized retrieval engine** to find relevant passages from the curated
+document corpus. Results are ranked by content relevance while keeping startup
+time and RAM usage low on free hosting tiers.
 
 ---
 
@@ -69,9 +69,8 @@ st.markdown("""
 | Component | Technology |
 |-----------|-----------|
 | Frontend | Streamlit |
-| Embeddings | all-MiniLM-L6-v2 (sentence-transformers) |
-| Vector Store | ChromaDB |
-| Text Processing | LangChain |
+| Retrieval | Lightweight TF-IDF (pure Python) |
+| Text Processing | Custom chunking + tokenization |
 | Runtime | Python 3.11 |
 
 ---

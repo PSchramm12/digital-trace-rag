@@ -1,6 +1,5 @@
 import streamlit as st
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from rag_core import DOCUMENTS, CHUNK_CONFIGS
+from rag_core import DOCUMENTS, CHUNK_CONFIGS, get_chunk_count
 from style import inject_custom_css
 
 st.set_page_config(page_title="Statistics — DigitalTrace", page_icon="📊", layout="centered")
@@ -37,8 +36,7 @@ evaluated strategies compare.
 
 for key, label, color in [("small", "🔹 Small", "#6366f1"), ("medium", "🔸 Medium (active)", "#f59e0b"), ("large", "🔶 Large", "#ef4444")]:
     cfg = CHUNK_CONFIGS[key]
-    splitter = RecursiveCharacterTextSplitter(chunk_size=cfg["chunk_size"], chunk_overlap=cfg["chunk_overlap"])
-    chunk_count = sum(len(splitter.split_text(doc["text"])) for doc in DOCUMENTS)
+    chunk_count = get_chunk_count(key)
     st.markdown(f"""
     <div class="stat-card" style="margin-bottom:0.75rem;">
         <h4>{label}</h4>
@@ -52,12 +50,12 @@ st.markdown("---")
 st.markdown("### Embedding Model")
 st.markdown("""
 <div class="stat-card" style="text-align:left;">
-    <h4>🤖 all-MiniLM-L6-v2</h4>
+    <h4>🤖 Lightweight TF-IDF Retrieval</h4>
     <table style="width:100%; border-collapse:collapse;">
-        <tr><td style="padding:0.3rem 0; color:#64748b;">Dimensions</td><td style="padding:0.3rem 0;">384</td></tr>
+        <tr><td style="padding:0.3rem 0; color:#64748b;">Vector Type</td><td style="padding:0.3rem 0;">Sparse TF-IDF</td></tr>
         <tr><td style="padding:0.3rem 0; color:#64748b;">Language</td><td style="padding:0.3rem 0;">English</td></tr>
-        <tr><td style="padding:0.3rem 0; color:#64748b;">Runtime</td><td style="padding:0.3rem 0;">ONNX (via ChromaDB default)</td></tr>
-        <tr><td style="padding:0.3rem 0; color:#64748b;">Source</td><td style="padding:0.3rem 0;">sentence-transformers (Hugging Face)</td></tr>
+        <tr><td style="padding:0.3rem 0; color:#64748b;">Runtime</td><td style="padding:0.3rem 0;">Pure Python (memory-optimized)</td></tr>
+        <tr><td style="padding:0.3rem 0; color:#64748b;">Goal</td><td style="padding:0.3rem 0;">Fast startup and low RAM on Render Free tier</td></tr>
     </table>
 </div>
 """, unsafe_allow_html=True)

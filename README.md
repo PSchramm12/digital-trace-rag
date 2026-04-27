@@ -1,6 +1,6 @@
 # DigitalTrace — RAG Knowledge Base on Digital Fingerprinting
 
-A Retrieval-Augmented Generation (RAG) web application that makes **digital fingerprinting** accessible and searchable. Built with Streamlit, LangChain, ChromaDB, and sentence-transformers.
+A Retrieval-Augmented Generation (RAG) web application that makes **digital fingerprinting** accessible and searchable. Built with Streamlit and a lightweight, memory-optimized retrieval core for stable free-tier deployment.
 
 Developed for the AI and Deep Learning course at the University of Ljubljana, School of Economics and Business.
 
@@ -10,7 +10,7 @@ Type a natural-language question and the app retrieves the most relevant passage
 
 ## Features
 
-- **Semantic Search** — find answers by meaning, not keywords
+- **Relevance Search** — retrieves the most relevant passages with low RAM usage
 - **15 Expert-Written Documents** — covering browser, device, canvas, audio, and extension fingerprinting, plus countermeasures, legal aspects, and the information paradox
 - **Corpus Statistics** — explore document structure and embedding model details
 - **Custom UI** — polished design with Inter font, gradient hero sections, and interactive topic cards
@@ -20,16 +20,15 @@ Type a natural-language question and the app retrieves the most relevant passage
 | Component | Technology |
 |-----------|-----------|
 | Frontend | Streamlit |
-| Embeddings | all-MiniLM-L6-v2 (sentence-transformers) |
-| Vector Store | ChromaDB |
-| Text Processing | LangChain |
+| Retrieval | Lightweight TF-IDF (pure Python) |
+| Text Processing | Custom chunking + tokenization |
 | Runtime | Python 3.11 |
 
 ## Project Structure
 
 ```
 app.py                  # Main search page
-rag_core.py             # Documents, chunking, embeddings, vector store
+rag_core.py             # Documents, chunking, lightweight retrieval engine
 style.py                # Custom CSS injection
 requirements.txt        # Python dependencies
 render.yaml             # Render deployment config
