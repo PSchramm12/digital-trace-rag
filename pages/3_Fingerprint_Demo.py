@@ -1,12 +1,17 @@
 import streamlit as st
 from style import inject_custom_css
-from rag_core import get_store
 
 st.set_page_config(
     page_title="Fingerprint Demo — DigitalTrace",
     page_icon="🖐️",
     layout="centered",
 )
+
+with st.spinner("Loading knowledge base…"):
+    from rag_core import get_store
+
+    primary_store = get_store("medium")["store"]
+
 inject_custom_css()
 
 st.markdown("""
@@ -564,7 +569,6 @@ FOLLOW_UP_PROMPTS = {
 }
 
 if "demo_query" in st.session_state:
-    primary_store = get_store("medium")["store"]
     query = st.session_state["demo_query"]
     results = primary_store.similarity_search_with_score(query, k=1)
     if results:

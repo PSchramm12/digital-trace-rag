@@ -1,5 +1,4 @@
 import streamlit as st
-from rag_core import get_store
 from style import inject_custom_css
 
 st.set_page_config(
@@ -7,6 +6,13 @@ st.set_page_config(
     page_icon="🔍",
     layout="centered",
 )
+
+# Load embeddings + vector store before building the rest of the page so the first
+# search is instant and cold-start work is not split across a half-rendered UI.
+with st.spinner("Loading knowledge base…"):
+    from rag_core import get_store
+
+    primary_store = get_store("medium")["store"]
 
 inject_custom_css()
 
@@ -31,8 +37,6 @@ query = st.text_input(
 RELEVANCE_THRESHOLD = 0.84
 
 if query.strip():
-    primary_store = get_store("medium")["store"]
-
     results = primary_store.similarity_search_with_score(query, k=3)
     if results:
         best_score = results[0][1]

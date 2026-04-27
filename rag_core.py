@@ -1,7 +1,6 @@
 import streamlit as st
 import numpy as np
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from chromadb.utils.embedding_functions.onnx_mini_lm_l6_v2 import ONNXMiniLM_L6_V2
 from dataclasses import dataclass, field
 
 DOCUMENTS = [
@@ -319,6 +318,8 @@ class NumpyVectorStore:
 
 @st.cache_resource
 def _get_embedding_fn():
+    from chromadb.utils.embedding_functions.onnx_mini_lm_l6_v2 import ONNXMiniLM_L6_V2
+
     return ONNXMiniLM_L6_V2()
 
 
