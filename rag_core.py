@@ -1,7 +1,9 @@
-import streamlit as st
+from pathlib import Path
+
 import numpy as np
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+import streamlit as st
 from dataclasses import dataclass, field
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 DOCUMENTS = [
     {
@@ -285,6 +287,16 @@ CHUNK_CONFIGS = {
     "large": {"chunk_size": 500, "chunk_overlap": 100},
 }
 
+_DATA_DIR = Path(__file__).resolve().parent / "data"
+# Shipped precomputed embeddings for the active medium strategy — avoids batch-encoding
+# all chunks on every cold start (major latency win on Render).
+_PRECOMPUTED_MEDIUM = _DATA_DIR / "precomputed_medium.npz"
+
+
+def _l2_normalize_rows(matrix: np.ndarray) -> np.ndarray:
+    norms = np.linalg.norm(matrix, axis=1, keepdims=True)
+    return matrix / np.maximum(norms, 1e-12)
+
 
 @dataclass
 class Document:
@@ -303,6 +315,8 @@ class NumpyVectorStore:
     def similarity_search_with_score(self, query: str, k: int = 3):
         ef = _get_embedding_fn()
         q = np.asarray(ef([query])[0], dtype=np.float32)
+        qn = np.linalg.norm(q)
+        q = q / max(float(qn), 1e-12)
         sims = self._matrix @ q
         dists = 1.0 - sims
         k = min(k, len(dists))
@@ -336,15 +350,31 @@ def build_vectorstore(chunk_size: int, chunk_overlap: int):
             texts.append(chunk)
             metadatas.append({"source": doc["title"]})
 
+    if (
+        chunk_size == CHUNK_CONFIGS["medium"]["chunk_size"]
+        and chunk_overlap == CHUNK_CONFIGS["medium"]["chunk_overlap"]
+        and _PRECOMPUTED_MEDIUM.is_file()
+    ):
+        loaded = np.load(_PRECOMPUTED_MEDIUM, allow_pickle=True)
+        matrix = _l2_normalize_rows(loaded["matrix"].astype(np.float32))
+        file_texts = loaded["texts"].tolist()
+        file_metas = [dict(m) for m in loaded["metadatas"].tolist()]
+        if len(file_texts) == len(texts) and file_texts == texts:
+            return NumpyVectorStore(matrix, file_texts, file_metas), len(file_texts)
+
     ef = _get_embedding_fn()
     raw = ef(texts)
-    matrix = np.stack([np.asarray(e, dtype=np.float32) for e in raw], axis=0)
+    matrix = _l2_normalize_rows(
+        np.stack([np.asarray(e, dtype=np.float32) for e in raw], axis=0)
+    )
     return NumpyVectorStore(matrix, texts, metadatas), len(texts)
 
 
 def get_store(key="medium"):
     cfg = CHUNK_CONFIGS[key]
     store, count = build_vectorstore(cfg["chunk_size"], cfg["chunk_overlap"])
+    # With precomputed chunks, only the query encoder must load (still the main cost).
+    _get_embedding_fn()
     return {"store": store, "chunk_count": count}
 
 
