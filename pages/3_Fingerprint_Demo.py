@@ -514,8 +514,6 @@ DEMO_TOPICS = [
     ("🛡️", "Countermeasures", "What countermeasures exist against digital fingerprinting?"),
 ]
 
-primary_store = get_store("medium")["store"]
-
 cols = st.columns(5)
 for i, (icon, label, query) in enumerate(DEMO_TOPICS):
     with cols[i % 5]:
@@ -566,6 +564,7 @@ FOLLOW_UP_PROMPTS = {
 }
 
 if "demo_query" in st.session_state:
+    primary_store = get_store("medium")["store"]
     query = st.session_state["demo_query"]
     results = primary_store.similarity_search_with_score(query, k=1)
     if results:

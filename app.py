@@ -1,7 +1,7 @@
 import re
 
 import streamlit as st
-from rag_core import get_store, DOCUMENTS
+from rag_core import get_store
 from style import inject_custom_css
 
 st.set_page_config(
@@ -22,8 +22,6 @@ st.markdown("""
     </p>
 </div>
 """, unsafe_allow_html=True)
-
-primary_store = get_store("medium")["store"]
 
 query = st.text_input(
     "🔎 Search the Knowledge Base",
@@ -50,6 +48,7 @@ DOMAIN_HINTS = (
 )
 
 if query.strip():
+    primary_store = get_store("medium")["store"]
     normalized_query = query.lower()
     has_domain_hint = any(
         re.search(rf"\b{re.escape(hint)}\w*\b", normalized_query)
