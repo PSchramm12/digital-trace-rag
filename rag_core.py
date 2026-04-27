@@ -1,7 +1,7 @@
 import streamlit as st
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+import chromadb
+from dataclasses import dataclass, field
 
 DOCUMENTS = [
     {
@@ -286,13 +286,37 @@ CHUNK_CONFIGS = {
 }
 
 
-@st.cache_resource
-def load_embeddings():
-    return HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+@dataclass
+class Document:
+    page_content: str
+    metadata: dict = field(default_factory=dict)
+
+
+class VectorStore:
+    """Thin wrapper around ChromaDB collection matching LangChain's query API."""
+
+    def __init__(self, collection):
+        self._collection = collection
+
+    def similarity_search_with_score(self, query, k=3):
+        results = self._collection.query(query_texts=[query], n_results=k)
+        output = []
+        for i in range(len(results["documents"][0])):
+            doc = Document(
+                page_content=results["documents"][0][i],
+                metadata=results["metadatas"][0][i],
+            )
+            output.append((doc, results["distances"][0][i]))
+        return output
 
 
 @st.cache_resource
-def build_vectorstore(_embeddings, chunk_size: int, chunk_overlap: int):
+def _get_client():
+    return chromadb.Client()
+
+
+@st.cache_resource
+def build_vectorstore(chunk_size: int, chunk_overlap: int):
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
@@ -300,34 +324,33 @@ def build_vectorstore(_embeddings, chunk_size: int, chunk_overlap: int):
 
     texts = []
     metadatas = []
+    ids = []
     for doc in DOCUMENTS:
         chunks = splitter.split_text(doc["text"])
-        for chunk in chunks:
+        for j, chunk in enumerate(chunks):
             texts.append(chunk)
             metadatas.append({"source": doc["title"]})
+            ids.append(f"{doc['title']}_{chunk_size}_{j}")
 
+    client = _get_client()
     collection_name = f"digitaltrace_{chunk_size}"
-    vectorstore = Chroma.from_texts(
-        texts=texts,
-        embedding=_embeddings,
-        metadatas=metadatas,
-        collection_name=collection_name,
-    )
-    return vectorstore, len(texts)
+    collection = client.get_or_create_collection(name=collection_name)
+    if collection.count() == 0:
+        collection.add(documents=texts, metadatas=metadatas, ids=ids)
+
+    return VectorStore(collection), len(texts)
 
 
 def get_store(key="medium"):
-    embeddings = load_embeddings()
     cfg = CHUNK_CONFIGS[key]
-    store, count = build_vectorstore(embeddings, cfg["chunk_size"], cfg["chunk_overlap"])
+    store, count = build_vectorstore(cfg["chunk_size"], cfg["chunk_overlap"])
     return {"store": store, "chunk_count": count}
 
 
 def get_stores():
-    embeddings = load_embeddings()
     results = {}
     for key, cfg in CHUNK_CONFIGS.items():
-        store, count = build_vectorstore(embeddings, cfg["chunk_size"], cfg["chunk_overlap"])
+        store, count = build_vectorstore(cfg["chunk_size"], cfg["chunk_overlap"])
         results[key] = {"store": store, "chunk_count": count}
     return results
 
