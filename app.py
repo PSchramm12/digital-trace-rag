@@ -1,3 +1,5 @@
+import re
+
 import streamlit as st
 from rag_core import get_store, DOCUMENTS
 from style import inject_custom_css
@@ -29,14 +31,39 @@ query = st.text_input(
 )
 
 RELEVANCE_THRESHOLD = 1.3
+DOMAIN_HINTS = (
+    "fingerprint",
+    "tracking",
+    "browser",
+    "device",
+    "canvas",
+    "audio",
+    "webgl",
+    "extension",
+    "entropy",
+    "hash",
+    "privacy",
+    "gdpr",
+    "countermeasure",
+    "ad-tech",
+    "paywall",
+)
 
 if query.strip():
+    normalized_query = query.lower()
+    has_domain_hint = any(
+        re.search(rf"\b{re.escape(hint)}\w*\b", normalized_query)
+        for hint in DOMAIN_HINTS
+    )
+
     results = primary_store.similarity_search_with_score(query, k=3)
     if results:
         best_score = results[0][1]
-        if best_score > RELEVANCE_THRESHOLD:
+        is_off_topic = (not has_domain_hint) or (best_score > RELEVANCE_THRESHOLD)
+        if is_off_topic:
             st.warning(
-                "Your query doesn't seem to be about digital fingerprinting. "
+                "No relevant match found for this query. "
+                "This app only contains digital fingerprinting content. "
                 "Try asking something like *\"How does canvas fingerprinting work?\"* "
                 "or *\"What countermeasures exist against tracking?\"*"
             )
