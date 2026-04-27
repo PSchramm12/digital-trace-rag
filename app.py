@@ -1,8 +1,3 @@
-import sys
-sys.modules["torch"] = None
-sys.modules["torch.cuda"] = None
-sys.modules["torch.nn"] = None
-
 import streamlit as st
 from rag_core import get_store, DOCUMENTS
 from style import inject_custom_css

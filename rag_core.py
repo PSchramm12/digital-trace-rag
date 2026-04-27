@@ -1,7 +1,8 @@
 import streamlit as st
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 import chromadb
-from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
+import numpy as np
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from chromadb.utils.embedding_functions.onnx_mini_lm_l6_v2 import ONNXMiniLM_L6_V2
 from dataclasses import dataclass, field
 
 DOCUMENTS = [
@@ -293,27 +294,36 @@ class Document:
     metadata: dict = field(default_factory=dict)
 
 
-class VectorStore:
-    """Thin wrapper around ChromaDB collection matching LangChain's query API."""
+class NumpyVectorStore:
+    """In-memory cosine retrieval using ChromaDB's ONNX MiniLM embeddings.
 
-    def __init__(self, collection):
-        self._collection = collection
+    Avoids ``chromadb.Client()`` (embedded DuckDB + index), which pushes small
+    Streamlit apps over Render's 512MB limit. Distances match Chroma's cosine
+    space: ``1 - cos_sim`` for L2-normalized embeddings.
+    """
 
-    def similarity_search_with_score(self, query, k=3):
-        results = self._collection.query(query_texts=[query], n_results=k)
-        output = []
-        for i in range(len(results["documents"][0])):
-            doc = Document(
-                page_content=results["documents"][0][i],
-                metadata=results["metadatas"][0][i],
+    def __init__(self, matrix: np.ndarray, texts: list[str], metadatas: list[dict]):
+        self._matrix = matrix
+        self._texts = texts
+        self._metadatas = metadatas
+
+    def similarity_search_with_score(self, query: str, k: int = 3):
+        ef = _get_embedding_fn()
+        q = np.asarray(ef([query])[0], dtype=np.float32)
+        sims = self._matrix @ q
+        dists = 1.0 - sims
+        k = min(k, len(dists))
+        top_idx = np.argsort(dists)[:k]
+        return [
+            (
+                Document(
+                    page_content=self._texts[i],
+                    metadata=self._metadatas[i],
+                ),
+                float(dists[i]),
             )
-            output.append((doc, results["distances"][0][i]))
-        return output
-
-
-@st.cache_resource
-def _get_client():
-    return chromadb.Client()
+            for i in top_idx
+        ]
 
 
 @st.cache_resource
@@ -330,24 +340,17 @@ def build_vectorstore(chunk_size: int, chunk_overlap: int):
 
     texts = []
     metadatas = []
-    ids = []
     for doc in DOCUMENTS:
         chunks = splitter.split_text(doc["text"])
-        for j, chunk in enumerate(chunks):
+        for chunk in chunks:
             texts.append(chunk)
             metadatas.append({"source": doc["title"]})
-            ids.append(f"{doc['title']}_{chunk_size}_{j}")
 
-    client = _get_client()
     ef = _get_embedding_fn()
-    collection_name = f"digitaltrace_{chunk_size}"
-    collection = client.get_or_create_collection(
-        name=collection_name, embedding_function=ef
-    )
-    if collection.count() == 0:
-        collection.add(documents=texts, metadatas=metadatas, ids=ids)
+    raw = ef(texts)
+    matrix = np.stack([np.asarray(e, dtype=np.float32) for e in raw], axis=0)
 
-    return VectorStore(collection), len(texts)
+    return NumpyVectorStore(matrix, texts, metadatas), len(texts)
 
 
 def get_store(key="medium"):
