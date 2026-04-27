@@ -1,4 +1,4 @@
-"""Rebuild data/precomputed_medium.npz after changing DOCUMENTS / chunk settings in rag_core."""
+"""Rebuild data/precomputed_medium.npz after changing DOCUMENTS, chunking, or EMBED_MODEL_NAME."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from rag_core import CHUNK_CONFIGS, DOCUMENTS  # noqa: E402
+from rag_core import CHUNK_CONFIGS, DOCUMENTS, EMBED_MODEL_NAME, embed_passages  # noqa: E402
 
 
 def main() -> None:
@@ -28,11 +28,7 @@ def main() -> None:
             texts.append(chunk)
             metadatas.append({"source": doc["title"]})
 
-    from chromadb.utils.embedding_functions.onnx_mini_lm_l6_v2 import ONNXMiniLM_L6_V2
-
-    ef = ONNXMiniLM_L6_V2()
-    raw = ef(texts)
-    matrix = np.stack([np.asarray(e, dtype=np.float32) for e in raw], axis=0)
+    matrix = embed_passages(texts)
     norms = np.linalg.norm(matrix, axis=1, keepdims=True)
     matrix = matrix / np.maximum(norms, 1e-12)
 
@@ -43,8 +39,9 @@ def main() -> None:
         matrix=matrix,
         texts=np.array(texts, dtype=object),
         metadatas=np.array(metadatas, dtype=object),
+        embed_model=np.array(EMBED_MODEL_NAME),
     )
-    print(f"Wrote {out} ({matrix.shape[0]} chunks, dim {matrix.shape[1]})")
+    print(f"Wrote {out} ({matrix.shape[0]} chunks, dim {matrix.shape[1]}, model={EMBED_MODEL_NAME})")
 
 
 if __name__ == "__main__":

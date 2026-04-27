@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 .env
 chroma_db/
+.fastembed_cache/
 _bmad-output/
 _bmad/
 .agents/

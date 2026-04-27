@@ -1,6 +1,6 @@
 # DigitalTrace — RAG Knowledge Base on Digital Fingerprinting
 
-A Retrieval-Augmented Generation (RAG) web application that makes **digital fingerprinting** accessible and searchable. Built with Streamlit, **MiniLM-L6-v2 sentence embeddings (ONNX)**, and a **NumPy** retrieval layer for semantic search without a full vector DB — tuned for modest RAM on free-tier hosting.
+A Retrieval-Augmented Generation (RAG) web application that makes **digital fingerprinting** accessible and searchable. Built with Streamlit, **MiniLM-L6-v2 ONNX embeddings** via **fastembed**, **fewer/larger chunks**, and a **NumPy** retrieval layer — tuned for **Render Free (~512 MB RAM)**.
 
 Developed for the AI and Deep Learning course at the University of Ljubljana, School of Economics and Business.
 
@@ -21,7 +21,7 @@ Type a natural-language question and the app retrieves the most relevant passage
 | Component | Technology |
 |-----------|-----------|
 | Frontend | Streamlit |
-| Retrieval | MiniLM-L6-v2 (ONNX) + NumPy cosine similarity |
+| Retrieval | MiniLM-L6-v2 (fastembed / ONNX) + NumPy cosine similarity |
 | Text Processing | LangChain `RecursiveCharacterTextSplitter` |
 | Runtime | Python 3.11 |
 

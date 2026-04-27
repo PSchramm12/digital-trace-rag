@@ -28,10 +28,10 @@ with col4:
 st.markdown("---")
 
 st.markdown("### Chunking Configuration")
-st.markdown("""
-The app uses a **medium chunking strategy** (chunk size = 350, overlap = 75) 
-which balances precision and context. The table below shows how all three 
-evaluated strategies compare.
+_m = CHUNK_CONFIGS["medium"]
+st.markdown(f"""
+The app uses a **medium chunking strategy** (chunk size = {_m["chunk_size"]}, overlap = {_m["chunk_overlap"]})
+with **fewer, longer chunks** to keep memory use low on 512 MB hosts. The table below compares all three strategies.
 """)
 
 for key, label, color in [("small", "🔹 Small", "#6366f1"), ("medium", "🔸 Medium (active)", "#f59e0b"), ("large", "🔶 Large", "#ef4444")]:
@@ -50,12 +50,12 @@ st.markdown("---")
 st.markdown("### Embedding Model")
 st.markdown("""
 <div class="stat-card" style="text-align:left;">
-    <h4>🤖 Semantic retrieval (MiniLM ONNX)</h4>
+    <h4>🤖 Semantic retrieval (fastembed / ONNX)</h4>
     <table style="width:100%; border-collapse:collapse;">
-        <tr><td style="padding:0.3rem 0; color:#64748b;">Model</td><td style="padding:0.3rem 0;">all-MiniLM-L6-v2 (384-d, ONNX via Chroma helper)</td></tr>
+        <tr><td style="padding:0.3rem 0; color:#64748b;">Model</td><td style="padding:0.3rem 0;">all-MiniLM-L6-v2 (384-d, ONNX via fastembed — avoids heavy TF stacks)</td></tr>
         <tr><td style="padding:0.3rem 0; color:#64748b;">Distance</td><td style="padding:0.3rem 0;">Cosine distance 1 − similarity on L2-normalized vectors</td></tr>
-        <tr><td style="padding:0.3rem 0; color:#64748b;">Store</td><td style="padding:0.3rem 0;">In-memory NumPy matrix (no Chroma client / DuckDB)</td></tr>
-        <tr><td style="padding:0.3rem 0; color:#64748b;">Goal</td><td style="padding:0.3rem 0;">Meaning-based matches (incl. typos) with modest RAM on free tier</td></tr>
+        <tr><td style="padding:0.3rem 0; color:#64748b;">Store</td><td style="padding:0.3rem 0;">Precomputed chunk matrix + NumPy dot-product search</td></tr>
+        <tr><td style="padding:0.3rem 0; color:#64748b;">Goal</td><td style="padding:0.3rem 0;">Semantic matches with minimal footprint on Render Free</td></tr>
     </table>
 </div>
 """, unsafe_allow_html=True)

@@ -25,9 +25,9 @@ about how online tracking works.
 ### How does it work?
 
 Type a natural-language question on the main page. The app uses **dense
-sentence embeddings** (all-MiniLM-L6-v2 via ONNX) for **semantic** retrieval:
-similar meaning matches even when wording or spelling differs. Vectors are kept
-in NumPy to avoid a full vector database and reduce RAM on free hosting tiers.
+embeddings** (all-MiniLM-L6-v2 via ONNX through **fastembed**) for **semantic** retrieval:
+similar meaning matches even when wording or spelling differs. Chunk vectors are
+precomputed and kept in NumPy so startup avoids a heavy vector DB and stays within **~512 MB** RAM budgets.
 
 ---
 
@@ -69,7 +69,7 @@ st.markdown("""
 | Component | Technology |
 |-----------|-----------|
 | Frontend | Streamlit |
-| Retrieval | MiniLM-L6-v2 embeddings (ONNX) + NumPy cosine retrieval |
+| Retrieval | MiniLM-L6-v2 (ONNX / fastembed) + NumPy cosine retrieval |
 | Text Processing | LangChain `RecursiveCharacterTextSplitter` |
 | Runtime | Python 3.11 |
 

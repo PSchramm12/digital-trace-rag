@@ -282,9 +282,10 @@ DOCUMENTS = [
 ]
 
 CHUNK_CONFIGS = {
-    "small": {"chunk_size": 200, "chunk_overlap": 50},
-    "medium": {"chunk_size": 350, "chunk_overlap": 75},
-    "large": {"chunk_size": 500, "chunk_overlap": 100},
+    "small": {"chunk_size": 220, "chunk_overlap": 45},
+    # Fewer, longer chunks => smaller in-memory embedding matrix (helps 512 MB RAM limits).
+    "medium": {"chunk_size": 520, "chunk_overlap": 40},
+    "large": {"chunk_size": 600, "chunk_overlap": 80},
 }
 
 _DATA_DIR = Path(__file__).resolve().parent / "data"
@@ -304,8 +305,13 @@ class Document:
     metadata: dict = field(default_factory=dict)
 
 
+# fastembed ONNX (~90 MB): lighter runtime than Chroma+TensorFlow; symmetric MiniLM (no query/passage templates).
+EMBED_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
+
+
 class NumpyVectorStore:
-    """Cosine-space retrieval: distance = 1 − cosine similarity (normalized MiniLM vectors)."""
+    """Cosine retrieval: distance = 1 − dot(q, d) on L2-normalized embedding vectors."""
 
     def __init__(self, matrix: np.ndarray, texts: list[str], metadatas: list[dict]):
         self._matrix = matrix
@@ -313,8 +319,7 @@ class NumpyVectorStore:
         self._metadatas = metadatas
 
     def similarity_search_with_score(self, query: str, k: int = 3):
-        ef = _get_embedding_fn()
-        q = np.asarray(ef([query])[0], dtype=np.float32)
+        q = embed_queries([query])[0]
         qn = np.linalg.norm(q)
         q = q / max(float(qn), 1e-12)
         sims = self._matrix @ q
@@ -331,10 +336,29 @@ class NumpyVectorStore:
 
 
 @st.cache_resource
-def _get_embedding_fn():
-    from chromadb.utils.embedding_functions.onnx_mini_lm_l6_v2 import ONNXMiniLM_L6_V2
+def _get_text_embedding():
+    from fastembed import TextEmbedding
 
-    return ONNXMiniLM_L6_V2()
+    cache_dir = Path(__file__).resolve().parent / ".fastembed_cache"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    return TextEmbedding(model_name=EMBED_MODEL_NAME, cache_dir=str(cache_dir))
+
+
+def _embed_raw(strings: list[str]) -> np.ndarray:
+    model = _get_text_embedding()
+    vecs = list(model.embed(strings))
+    arr = np.stack([np.asarray(v, dtype=np.float32) for v in vecs], axis=0)
+    return _l2_normalize_rows(arr)
+
+
+def embed_passages(texts: list[str]) -> np.ndarray:
+    return _embed_raw(texts)
+
+
+def embed_queries(texts: list[str]) -> np.ndarray:
+    if "bge" in EMBED_MODEL_NAME.lower():
+        texts = [BGE_QUERY_PREFIX + t for t in texts]
+    return _embed_raw(texts)
 
 
 @st.cache_resource
@@ -356,25 +380,21 @@ def build_vectorstore(chunk_size: int, chunk_overlap: int):
         and _PRECOMPUTED_MEDIUM.is_file()
     ):
         loaded = np.load(_PRECOMPUTED_MEDIUM, allow_pickle=True)
-        matrix = _l2_normalize_rows(loaded["matrix"].astype(np.float32))
-        file_texts = loaded["texts"].tolist()
-        file_metas = [dict(m) for m in loaded["metadatas"].tolist()]
-        if len(file_texts) == len(texts) and file_texts == texts:
-            return NumpyVectorStore(matrix, file_texts, file_metas), len(file_texts)
+        if "embed_model" in loaded.files and str(loaded["embed_model"].item()) == EMBED_MODEL_NAME:
+            matrix = _l2_normalize_rows(loaded["matrix"].astype(np.float32))
+            file_texts = loaded["texts"].tolist()
+            file_metas = [dict(m) for m in loaded["metadatas"].tolist()]
+            if len(file_texts) == len(texts) and file_texts == texts:
+                return NumpyVectorStore(matrix, file_texts, file_metas), len(file_texts)
 
-    ef = _get_embedding_fn()
-    raw = ef(texts)
-    matrix = _l2_normalize_rows(
-        np.stack([np.asarray(e, dtype=np.float32) for e in raw], axis=0)
-    )
+    matrix = embed_passages(texts)
     return NumpyVectorStore(matrix, texts, metadatas), len(texts)
 
 
 def get_store(key="medium"):
     cfg = CHUNK_CONFIGS[key]
     store, count = build_vectorstore(cfg["chunk_size"], cfg["chunk_overlap"])
-    # With precomputed chunks, only the query encoder must load (still the main cost).
-    _get_embedding_fn()
+    embed_queries(["warmup"])
     return {"store": store, "chunk_count": count}
 
 
