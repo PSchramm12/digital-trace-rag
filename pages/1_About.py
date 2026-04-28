@@ -71,7 +71,7 @@ st.markdown("""
 |-----------|-----------|
 | Frontend | Streamlit |
 | Retrieval | Bundled MiniLM-L6-v2 (ONNX / fastembed) + NumPy cosine retrieval |
-| Text Processing | LangChain `RecursiveCharacterTextSplitter` |
+| Text Processing | LangChain RecursiveCharacterTextSplitter |
 | Runtime | Python 3.11 |
 
 ---
