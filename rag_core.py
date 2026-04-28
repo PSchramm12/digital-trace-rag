@@ -290,7 +290,7 @@ CHUNK_CONFIGS = {
 _PROJECT_DIR = Path(__file__).resolve().parent
 _DATA_DIR = _PROJECT_DIR / "data"
 # Shipped precomputed embeddings for the active medium strategy — avoids batch-encoding
-# all chunks on every cold start (major latency win on Render).
+# all chunks on every cold start (major latency win on free-tier hosts).
 _PRECOMPUTED_MEDIUM = _DATA_DIR / "precomputed_medium.npz"
 _BUNDLED_MODEL_DIR = _PROJECT_DIR / "model_assets" / "all-MiniLM-L6-v2-onnx"
 
@@ -409,7 +409,7 @@ def build_vectorstore(chunk_size: int, chunk_overlap: int):
 def get_store(key="medium"):
     cfg = CHUNK_CONFIGS[key]
     store, count = build_vectorstore(cfg["chunk_size"], cfg["chunk_overlap"])
-    # Do not warm the ONNX embedder here: on Render, first model fetch can take minutes
+    # Do not warm the ONNX embedder here: first model fetch can take minutes
     # and would block the whole Streamlit run behind "Loading knowledge base…".
     return {"store": store, "chunk_count": count}
 

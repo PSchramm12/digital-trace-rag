@@ -34,7 +34,7 @@ query = st.text_input(
     placeholder="e.g. How does canvas fingerprinting work?",
 )
 st.caption(
-    "The embedding model is bundled with the app, so Render does not need a network download. "
+    "The embedding model is bundled with the app, so no runtime network model download is needed. "
     "A cold server may still take a short moment to initialize the local ONNX session."
 )
 

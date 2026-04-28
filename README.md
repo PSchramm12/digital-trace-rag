@@ -1,6 +1,6 @@
 # DigitalTrace — RAG Knowledge Base on Digital Fingerprinting
 
-A Retrieval-Augmented Generation (RAG) web application that makes **digital fingerprinting** accessible and searchable. Built with Streamlit, a **bundled MiniLM-L6-v2 ONNX model** via **fastembed**, **fewer/larger chunks**, and a **NumPy** retrieval layer — tuned for **Render Free (~512 MB RAM)**.
+A Retrieval-Augmented Generation (RAG) web application that makes **digital fingerprinting** accessible and searchable. Built with Streamlit, a **bundled MiniLM-L6-v2 ONNX model** via **fastembed**, **fewer/larger chunks**, and a **NumPy** retrieval layer — tuned for lightweight free-tier hosting (~512 MB RAM).
 
 Developed for the AI and Deep Learning course at the University of Ljubljana, School of Economics and Business.
 
@@ -32,7 +32,7 @@ app.py                  # Main search page
 rag_core.py             # Documents, chunking, embeddings, NumPy vector store
 style.py                # Custom CSS injection
 requirements.txt        # Python dependencies
-render.yaml             # Render deployment config
+render.yaml             # Hosting deployment config
 pages/
   1_About.py            # About page with topic coverage
   2_Statistics.py       # Corpus statistics, chunking configs, document index
@@ -47,6 +47,6 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-## Deploy to Render
+## Deploy
 
-The included `render.yaml` configures the app as a web service. Connect this repo to [Render](https://render.com) and it deploys automatically.
+Use your hosting provider settings with the included `render.yaml` as a reference web-service configuration.
