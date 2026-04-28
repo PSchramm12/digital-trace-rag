@@ -7,13 +7,14 @@ st.set_page_config(
     layout="centered",
 )
 
-def _get_primary_store():
-    # Lazy load via session state: avoids long "Running cached function" phases in UI.
-    if "_primary_store" not in st.session_state:
-        from rag_core import get_store
+from rag_core import (
+    get_async_store_result,
+    get_async_store_status,
+    start_store_init_async,
+)
 
-        st.session_state["_primary_store"] = get_store("medium")["store"]
-    return st.session_state["_primary_store"]
+# Fire-and-forget initialization in background so page render never blocks.
+start_store_init_async("medium")
 
 inject_custom_css()
 
@@ -42,16 +43,27 @@ st.caption(
 RELEVANCE_THRESHOLD = 0.84
 
 if query.strip():
-    try:
-        with st.spinner("Searching… (initializing local embedding model on first use)"):
-            primary_store = _get_primary_store()
-            results = primary_store.similarity_search_with_score(query, k=3)
-    except Exception as e:
-        st.error(
-            "Search backend failed to initialize. Please check Render logs for details."
+    status = get_async_store_status()
+    result = get_async_store_result()
+    if not status["ready"]:
+        st.info(
+            "Search engine is still initializing in the background. "
+            "Please retry in a few seconds."
         )
-        st.exception(e)
         st.stop()
+    if status["has_error"]:
+        st.error("Search backend failed to initialize.")
+        if result["traceback"]:
+            st.code(result["traceback"])
+        elif result["error"] is not None:
+            st.exception(result["error"])
+        st.stop()
+    primary_store = result["store"]
+    if primary_store is None:
+        st.error("Search backend finished init but no store is available.")
+        st.stop()
+    with st.spinner("Searching…"):
+        results = primary_store.similarity_search_with_score(query, k=3)
     if results:
         best_score = results[0][1]
         is_off_topic = best_score > RELEVANCE_THRESHOLD

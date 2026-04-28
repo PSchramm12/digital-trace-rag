@@ -1,4 +1,6 @@
 from pathlib import Path
+import threading
+import traceback
 
 import numpy as np
 import streamlit as st
@@ -410,6 +412,49 @@ def get_store(key="medium"):
     # Do not warm the ONNX embedder here: on Render, first model fetch can take minutes
     # and would block the whole Streamlit run behind "Loading knowledge base…".
     return {"store": store, "chunk_count": count}
+
+
+_ASYNC_STORE: NumpyVectorStore | None = None
+_ASYNC_ERROR: Exception | None = None
+_ASYNC_TRACEBACK: str | None = None
+_ASYNC_KEY: str | None = None
+_ASYNC_READY = threading.Event()
+_ASYNC_LOCK = threading.Lock()
+_ASYNC_STARTED = False
+
+
+def _async_build_store(key: str) -> None:
+    global _ASYNC_STORE, _ASYNC_ERROR, _ASYNC_TRACEBACK
+    try:
+        _ASYNC_STORE = get_store(key)["store"]
+    except Exception as exc:  # pragma: no cover - error path for runtime diagnostics
+        _ASYNC_ERROR = exc
+        _ASYNC_TRACEBACK = traceback.format_exc()
+    finally:
+        _ASYNC_READY.set()
+
+
+def start_store_init_async(key: str = "medium") -> None:
+    global _ASYNC_STARTED, _ASYNC_KEY
+    with _ASYNC_LOCK:
+        if _ASYNC_STARTED and _ASYNC_KEY == key:
+            return
+        _ASYNC_STARTED = True
+        _ASYNC_KEY = key
+        t = threading.Thread(target=_async_build_store, args=(key,), daemon=True)
+        t.start()
+
+
+def get_async_store_status() -> dict:
+    return {
+        "started": _ASYNC_STARTED,
+        "ready": _ASYNC_READY.is_set(),
+        "has_error": _ASYNC_ERROR is not None,
+    }
+
+
+def get_async_store_result() -> dict:
+    return {"store": _ASYNC_STORE, "error": _ASYNC_ERROR, "traceback": _ASYNC_TRACEBACK}
 
 
 def get_chunk_count(key: str) -> int:

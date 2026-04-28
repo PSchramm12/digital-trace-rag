@@ -565,18 +565,34 @@ FOLLOW_UP_PROMPTS = {
 
 if "demo_query" in st.session_state:
     query = st.session_state["demo_query"]
-    try:
-        from rag_core import get_store
+    from rag_core import (
+        get_async_store_result,
+        get_async_store_status,
+        start_store_init_async,
+    )
 
-        with st.spinner(
-            "Loading passage match… (initializing local embedding model on first use)"
-        ):
-            primary_store = get_store("medium")["store"]
-            results = primary_store.similarity_search_with_score(query, k=1)
-    except Exception as e:
-        st.error("Failed to load the knowledge base for this query.")
-        st.exception(e)
+    start_store_init_async("medium")
+    status = get_async_store_status()
+    result = get_async_store_result()
+    if not status["ready"]:
+        st.info(
+            "Knowledge base is still initializing in the background. "
+            "Please retry this query in a few seconds."
+        )
         st.stop()
+    if status["has_error"]:
+        st.error("Failed to initialize the knowledge base for this query.")
+        if result["traceback"]:
+            st.code(result["traceback"])
+        elif result["error"] is not None:
+            st.exception(result["error"])
+        st.stop()
+    primary_store = result["store"]
+    if primary_store is None:
+        st.error("Knowledge base init finished but no store is available.")
+        st.stop()
+    with st.spinner("Loading passage match…"):
+        results = primary_store.similarity_search_with_score(query, k=1)
     if results:
         doc, score = results[0]
         source = doc.metadata.get("source", "Unknown")
