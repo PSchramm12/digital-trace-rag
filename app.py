@@ -8,9 +8,17 @@ st.set_page_config(
 )
 
 # Precomputed chunk matrix only (fast). The ONNX query model loads on first search.
-from rag_core import get_store
+try:
+    from rag_core import get_store
 
-primary_store = get_store("medium")["store"]
+    primary_store = get_store("medium")["store"]
+except Exception as e:
+    st.error(
+        "Failed to initialize the knowledge base. "
+        "Open the Render logs to see the full stack trace."
+    )
+    st.exception(e)
+    st.stop()
 
 inject_custom_css()
 

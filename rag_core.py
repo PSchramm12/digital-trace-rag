@@ -340,10 +340,20 @@ def _get_text_embedding():
 
     cache_dir = _PROJECT_DIR / ".fastembed_cache"
     cache_dir.mkdir(parents=True, exist_ok=True)
-    kwargs = {"model_name": EMBED_MODEL_NAME, "cache_dir": str(cache_dir)}
-    if _BUNDLED_MODEL_DIR.is_dir():
-        kwargs["specific_model_path"] = str(_BUNDLED_MODEL_DIR)
-        kwargs["local_files_only"] = True
+    if not _BUNDLED_MODEL_DIR.is_dir():
+        raise RuntimeError(
+            f"Bundled model directory not found: {_BUNDLED_MODEL_DIR}. "
+            "Deploy must include model_assets/ to avoid runtime downloads."
+        )
+
+    # Force offline usage: if the model bundle is missing/corrupt, fail fast with a clear error
+    # instead of hanging on a network download.
+    kwargs = {
+        "model_name": EMBED_MODEL_NAME,
+        "cache_dir": str(cache_dir),
+        "specific_model_path": str(_BUNDLED_MODEL_DIR),
+        "local_files_only": True,
+    }
     return TextEmbedding(**kwargs)
 
 
