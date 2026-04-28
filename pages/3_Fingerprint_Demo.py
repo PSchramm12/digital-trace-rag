@@ -7,11 +7,6 @@ st.set_page_config(
     layout="centered",
 )
 
-with st.spinner("Loading knowledge base…"):
-    from rag_core import get_store
-
-    primary_store = get_store("medium")["store"]
-
 inject_custom_css()
 
 st.markdown("""
@@ -570,7 +565,11 @@ FOLLOW_UP_PROMPTS = {
 
 if "demo_query" in st.session_state:
     query = st.session_state["demo_query"]
-    results = primary_store.similarity_search_with_score(query, k=1)
+    from rag_core import get_store
+
+    with st.spinner("Loading passage match… (embedding model on first use)"):
+        primary_store = get_store("medium")["store"]
+        results = primary_store.similarity_search_with_score(query, k=1)
     if results:
         doc, score = results[0]
         source = doc.metadata.get("source", "Unknown")

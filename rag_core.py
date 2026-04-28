@@ -394,7 +394,8 @@ def build_vectorstore(chunk_size: int, chunk_overlap: int):
 def get_store(key="medium"):
     cfg = CHUNK_CONFIGS[key]
     store, count = build_vectorstore(cfg["chunk_size"], cfg["chunk_overlap"])
-    embed_queries(["warmup"])
+    # Do not warm the ONNX embedder here: on Render, first model fetch can take minutes
+    # and would block the whole Streamlit run behind "Loading knowledge base…".
     return {"store": store, "chunk_count": count}
 
 

@@ -7,12 +7,10 @@ st.set_page_config(
     layout="centered",
 )
 
-# Load embeddings + vector store before building the rest of the page so the first
-# search is instant and cold-start work is not split across a half-rendered UI.
-with st.spinner("Loading knowledge base…"):
-    from rag_core import get_store
+# Precomputed chunk matrix only (fast). The ONNX query model loads on first search.
+from rag_core import get_store
 
-    primary_store = get_store("medium")["store"]
+primary_store = get_store("medium")["store"]
 
 inject_custom_css()
 
@@ -31,13 +29,18 @@ query = st.text_input(
     "🔎 Search the Knowledge Base",
     placeholder="e.g. How does canvas fingerprinting work?",
 )
+st.caption(
+    "First search on a cold server can take ~30–90s while the small embedding model downloads; "
+    "later searches are quick."
+)
 
 # Cosine distance = 1 − similarity (lower is better). Tuned so typos still match
 # (~0.7) while clearly off-topic queries stay above ~0.85–0.95.
 RELEVANCE_THRESHOLD = 0.84
 
 if query.strip():
-    results = primary_store.similarity_search_with_score(query, k=3)
+    with st.spinner("Searching… (loading embedding model on first use)"):
+        results = primary_store.similarity_search_with_score(query, k=3)
     if results:
         best_score = results[0][1]
         is_off_topic = best_score > RELEVANCE_THRESHOLD
