@@ -7,12 +7,13 @@ st.set_page_config(
     layout="centered",
 )
 
-@st.cache_resource
-def _load_primary_store():
-    # Lazy load: do not block initial page render on server cold start.
-    from rag_core import get_store
+def _get_primary_store():
+    # Lazy load via session state: avoids long "Running cached function" phases in UI.
+    if "_primary_store" not in st.session_state:
+        from rag_core import get_store
 
-    return get_store("medium")["store"]
+        st.session_state["_primary_store"] = get_store("medium")["store"]
+    return st.session_state["_primary_store"]
 
 inject_custom_css()
 
@@ -43,7 +44,7 @@ RELEVANCE_THRESHOLD = 0.84
 if query.strip():
     try:
         with st.spinner("Searching… (initializing local embedding model on first use)"):
-            primary_store = _load_primary_store()
+            primary_store = _get_primary_store()
             results = primary_store.similarity_search_with_score(query, k=3)
     except Exception as e:
         st.error(
