@@ -567,7 +567,7 @@ if "demo_query" in st.session_state:
     query = st.session_state["demo_query"]
     from rag_core import get_store
 
-    with st.spinner("Loading passage match… (embedding model on first use)"):
+    with st.spinner("Loading passage match… (initializing local embedding model on first use)"):
         primary_store = get_store("medium")["store"]
         results = primary_store.similarity_search_with_score(query, k=1)
     if results:

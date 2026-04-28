@@ -104,8 +104,7 @@ DOCUMENTS = [
             "audio hardware process it. Minor differences in speaker and sound "
             "card components produce characteristic deviations that enable a "
             "fingerprint. This technique resembles canvas fingerprinting and was "
-            "uncovered by researchers around 2015/16. Practical use remains rare, "
-            "but it illustrates yet another avenue for tracking methods."
+            "uncovered by researchers around 2015/16. Practical use remains rare."
         ),
         "title": "Audio Fingerprinting",
     },
@@ -157,8 +156,7 @@ DOCUMENTS = [
             "ads for new graphics cards. News websites use fingerprinting for "
             "paywall enforcement — services like Piano's Tinypass use browser "
             "fingerprinting to identify users who have already accessed free "
-            "articles. Fingerprinting has become more popular than cookies for "
-            "advertising and paywall enforcement."
+            "articles."
         ),
         "title": "Marketing, Ad-Tech & Paywalls",
     },
@@ -193,8 +191,7 @@ DOCUMENTS = [
             "from third-party cookies — but without the user's knowledge. Privacy "
             "concerns include loss of anonymity, the surreptitious nature of data "
             "collection, and the threat of data sharing with unauthorized third "
-            "parties. Information gathered through fingerprinting could be linked "
-            "to public records, stolen login data, or social media profiles."
+            "parties."
         ),
         "title": "GDPR & Privacy Law",
     },
@@ -288,10 +285,12 @@ CHUNK_CONFIGS = {
     "large": {"chunk_size": 600, "chunk_overlap": 80},
 }
 
-_DATA_DIR = Path(__file__).resolve().parent / "data"
+_PROJECT_DIR = Path(__file__).resolve().parent
+_DATA_DIR = _PROJECT_DIR / "data"
 # Shipped precomputed embeddings for the active medium strategy — avoids batch-encoding
 # all chunks on every cold start (major latency win on Render).
 _PRECOMPUTED_MEDIUM = _DATA_DIR / "precomputed_medium.npz"
+_BUNDLED_MODEL_DIR = _PROJECT_DIR / "model_assets" / "all-MiniLM-L6-v2-onnx"
 
 
 def _l2_normalize_rows(matrix: np.ndarray) -> np.ndarray:
@@ -339,9 +338,13 @@ class NumpyVectorStore:
 def _get_text_embedding():
     from fastembed import TextEmbedding
 
-    cache_dir = Path(__file__).resolve().parent / ".fastembed_cache"
+    cache_dir = _PROJECT_DIR / ".fastembed_cache"
     cache_dir.mkdir(parents=True, exist_ok=True)
-    return TextEmbedding(model_name=EMBED_MODEL_NAME, cache_dir=str(cache_dir))
+    kwargs = {"model_name": EMBED_MODEL_NAME, "cache_dir": str(cache_dir)}
+    if _BUNDLED_MODEL_DIR.is_dir():
+        kwargs["specific_model_path"] = str(_BUNDLED_MODEL_DIR)
+        kwargs["local_files_only"] = True
+    return TextEmbedding(**kwargs)
 
 
 def _embed_raw(strings: list[str]) -> np.ndarray:

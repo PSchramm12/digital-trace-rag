@@ -52,9 +52,9 @@ st.markdown("""
 <div class="stat-card" style="text-align:left;">
     <h4>🤖 Semantic retrieval (fastembed / ONNX)</h4>
     <table style="width:100%; border-collapse:collapse;">
-        <tr><td style="padding:0.3rem 0; color:#64748b;">Model</td><td style="padding:0.3rem 0;">all-MiniLM-L6-v2 (384-d, ONNX via fastembed — avoids heavy TF stacks)</td></tr>
+        <tr><td style="padding:0.3rem 0; color:#64748b;">Model</td><td style="padding:0.3rem 0;">all-MiniLM-L6-v2 (384-d, ONNX via fastembed, bundled locally with the app)</td></tr>
         <tr><td style="padding:0.3rem 0; color:#64748b;">Distance</td><td style="padding:0.3rem 0;">Cosine distance 1 − similarity on L2-normalized vectors</td></tr>
-        <tr><td style="padding:0.3rem 0; color:#64748b;">Store</td><td style="padding:0.3rem 0;">Precomputed chunk matrix + NumPy dot-product search</td></tr>
+        <tr><td style="padding:0.3rem 0; color:#64748b;">Store</td><td style="padding:0.3rem 0;">Precomputed chunk matrix + bundled ONNX model + NumPy dot-product search</td></tr>
         <tr><td style="padding:0.3rem 0; color:#64748b;">Goal</td><td style="padding:0.3rem 0;">Semantic matches with minimal footprint on Render Free</td></tr>
     </table>
 </div>

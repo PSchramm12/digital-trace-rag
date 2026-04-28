@@ -30,8 +30,8 @@ query = st.text_input(
     placeholder="e.g. How does canvas fingerprinting work?",
 )
 st.caption(
-    "First search on a cold server can take ~30–90s while the small embedding model downloads; "
-    "later searches are quick."
+    "The embedding model is bundled with the app, so Render does not need a network download. "
+    "A cold server may still take a short moment to initialize the local ONNX session."
 )
 
 # Cosine distance = 1 − similarity (lower is better). Tuned so typos still match
@@ -39,7 +39,7 @@ st.caption(
 RELEVANCE_THRESHOLD = 0.84
 
 if query.strip():
-    with st.spinner("Searching… (loading embedding model on first use)"):
+    with st.spinner("Searching… (initializing local embedding model on first use)"):
         results = primary_store.similarity_search_with_score(query, k=3)
     if results:
         best_score = results[0][1]
