@@ -7,18 +7,12 @@ st.set_page_config(
     layout="centered",
 )
 
-# Precomputed chunk matrix only (fast). The ONNX query model loads on first search.
-try:
+@st.cache_resource
+def _load_primary_store():
+    # Lazy load: do not block initial page render on server cold start.
     from rag_core import get_store
 
-    primary_store = get_store("medium")["store"]
-except Exception as e:
-    st.error(
-        "Failed to initialize the knowledge base. "
-        "Open the Render logs to see the full stack trace."
-    )
-    st.exception(e)
-    st.stop()
+    return get_store("medium")["store"]
 
 inject_custom_css()
 
@@ -47,8 +41,16 @@ st.caption(
 RELEVANCE_THRESHOLD = 0.84
 
 if query.strip():
-    with st.spinner("Searching… (initializing local embedding model on first use)"):
-        results = primary_store.similarity_search_with_score(query, k=3)
+    try:
+        with st.spinner("Searching… (initializing local embedding model on first use)"):
+            primary_store = _load_primary_store()
+            results = primary_store.similarity_search_with_score(query, k=3)
+    except Exception as e:
+        st.error(
+            "Search backend failed to initialize. Please check Render logs for details."
+        )
+        st.exception(e)
+        st.stop()
     if results:
         best_score = results[0][1]
         is_off_topic = best_score > RELEVANCE_THRESHOLD
